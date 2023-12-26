@@ -1,22 +1,27 @@
 import discord
 from discord.ext import commands
-
-
-TMDB_API_KEY = '8a37598beeaadf71a6ceb69d96f9714d'
+from database import Database
+import asyncio
 
 DISCORD_BOT_TOKEN = 'MTE1NTk4NzYxOTk5MDIyNDk2Ng.G7yoKd.9dhgPl_gxgrVi27rgkj0IVrUAsBmn9hxULaugw'
-
 
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
-bot.tmdb_api_key = TMDB_API_KEY
+async def main():
+    bot = commands.Bot(command_prefix='!', intents=intents)
 
-@bot.event
-async def on_ready():
-    print(f'Logado como {bot.user}')
+    database_path = 'sqlt_apis.db'
+    bot.database = Database(database_path)
+
+    @bot.event
+    async def on_ready():
+        print(f'Logado como {bot.user}')
+
     await bot.load_extension('search')
 
-bot.run(DISCORD_BOT_TOKEN)
+    await bot.start(DISCORD_BOT_TOKEN)
+
+asyncio.run(main())
+

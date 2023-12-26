@@ -3,7 +3,7 @@ from discord.ext import commands
 from database import Database
 import asyncio
 
-DISCORD_BOT_TOKEN = 'MTE1NTk4NzYxOTk5MDIyNDk2Ng.G7yoKd.9dhgPl_gxgrVi27rgkj0IVrUAsBmn9hxULaugw'
+DISCORD_BOT_TOKEN = 'MTE4OTI0NDk5MjYzNjU5MjEyOA.GavR4u.QSAj02QBW9j56UsxUuJV7Vg5GwJJEqaKTQizgs'
 
 intents = discord.Intents.default()
 intents.messages = True

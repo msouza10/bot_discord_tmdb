@@ -42,4 +42,6 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - Notificações de Lançamentos e Eventos
 - API_KEY em DM ## - implementado 27/12/2023
 - Rota inicial de configuracao
+- Plataformas onde os filmes estao disponiveis
+- 
 

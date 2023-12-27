@@ -20,6 +20,7 @@ async def main():
         print(f'Logado como {bot.user}')
 
     await bot.load_extension('search')
+    await bot.load_extension('help_function')
 
     await bot.start(DISCORD_BOT_TOKEN)
 

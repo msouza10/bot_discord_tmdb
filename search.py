@@ -6,10 +6,44 @@ class FilmeCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def is_valid_api_key(self, api_key):
+      """Verifica se a chave da API do TMDb é válida."""
+      test_url = f"https://api.themoviedb.org/3/movie/550?api_key={api_key}"
+      try:
+          response = requests.get(test_url)
+          if response.status_code == 200:
+              data = response.json()
+              # Verifica se alguns campos esperados estão na resposta
+              required_fields = ['id', 'title', 'overview', 'genres', 'release_date']
+              if all(field in data for field in required_fields):
+                  return True
+              else:
+                  return False
+          else:
+              return False
+      except requests.RequestException:
+          return False
+
     @commands.command(name='configurar_api')
-    async def set_api_key(self, ctx, api_key):
-        self.bot.database.set_user_api_key(ctx.author.id, api_key)
-        await ctx.send("Chave da API configurada com sucesso!")
+    async def set_api_key(self, ctx):
+        if ctx.guild is not None:
+            await ctx.send("Vou te enviar uma mensagem privada para configurar sua chave da API.")
+
+        def check(m):
+            return m.author == ctx.author and isinstance(m.channel, discord.DMChannel)
+
+        try:
+            await ctx.author.send("Por favor, envie sua chave da API do TMDb aqui.")
+            message = await self.bot.wait_for('message', check=check, timeout=300)
+            api_key = message.content
+
+            if await self.is_valid_api_key(api_key):
+                self.bot.database.set_user_api_key(ctx.author.id, api_key)
+                await ctx.author.send("Chave da API configurada com sucesso!")
+            else:
+                await ctx.author.send("A chave da API fornecida é inválida. Por favor, tente novamente com uma chave válida.")
+        except asyncio.TimeoutError:
+            await ctx.author.send("Você não enviou a chave da API a tempo. Por favor, tente o comando novamente.")
 
     def get_user_api_key(self, user_id):
         return self.bot.database.get_user_api_key(user_id)

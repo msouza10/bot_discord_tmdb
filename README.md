@@ -21,6 +21,7 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - `!top_filmes`: Mostra os 10 filmes mais bem avaliados no TMDb.
 - `!top_filmes [N]`: Mostra os top N filmes mais bem avaliados. Exemplo: `!top_filmes 20`.
 - `!top_filmes [X-Y]`: Mostra os filmes mais bem avaliados em um intervalo específico. Exemplo: `!top_filmes 10-20`.
+- `!ajuda`: Mostra como utilizar os comandos do bot Exemplo: `!top_filmes 10-20`.
 
 ## Limites e Funcionamento do Banco de Dados
 
@@ -42,6 +43,8 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - Notificações de Lançamentos e Eventos
 - API_KEY em DM ## - implementado 27/12/2023
 - Rota inicial de configuracao
-- Plataformas onde os filmes estao disponiveis
-- 
+- Comando de !ajuda ## - implementado 27/12/2023
+- Plataforma onde os filmes estao disponiveis ## - implementado 28/12/2023
+- busca por atores ## - implementado 28/12/2023
+- alterar da lib requests para aiohttp
 

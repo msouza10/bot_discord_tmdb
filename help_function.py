@@ -30,6 +30,8 @@ class BotEvents(commands.Cog):
                       value="Mostra os top N filmes mais bem avaliados. Exemplo: `!top_filmes 20`", inline=False)
       embed.add_field(name="!top_filmes [X-Y]",
                       value="Mostra os filmes mais bem avaliados em um intervalo específico. Exemplo: `!top_filmes 10-20`.", inline=False)
+      embed.add_field(name="!pessoa <nome>",
+        value="Busca informações sobre uma pessoa específica na indústria cinematográfica, como atores, diretores, etc. Fornece detalhes como nome, biografia, data de nascimento, local de nascimento, papéis notáveis e mais. Exemplo: `!pessoa Brad Pitt`.", inline=False)
   
       await ctx.send(embed=embed)
         

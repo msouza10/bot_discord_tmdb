@@ -1,28 +1,25 @@
 import discord
 from discord.ext import commands
 import requests
+import asyncio  
 
 class FilmeCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     async def is_valid_api_key(self, api_key):
-      """Verifica se a chave da API do TMDb é válida."""
-      test_url = f"https://api.themoviedb.org/3/movie/550?api_key={api_key}"
-      try:
-          response = requests.get(test_url)
-          if response.status_code == 200:
-              data = response.json()
-              # Verifica se alguns campos esperados estão na resposta
-              required_fields = ['id', 'title', 'overview', 'genres', 'release_date']
-              if all(field in data for field in required_fields):
-                  return True
-              else:
-                  return False
-          else:
-              return False
-      except requests.RequestException:
-          return False
+        """Verifica se a chave da API do TMDb é válida."""
+        test_url = f"https://api.themoviedb.org/3/movie/550?api_key={api_key}"
+        try:
+            response = requests.get(test_url)
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ['id', 'title', 'overview', 'genres', 'release_date']
+                return all(field in data for field in required_fields)
+            else:
+                return False
+        except requests.RequestException:
+            return False
 
     @commands.command(name='configurar_api')
     async def set_api_key(self, ctx):
@@ -48,7 +45,18 @@ class FilmeCog(commands.Cog):
     def get_user_api_key(self, user_id):
         return self.bot.database.get_user_api_key(user_id)
 
-    
+    def get_streaming_services(self, movie_id, api_key):
+        providers_url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={api_key}"
+        response = requests.get(providers_url)
+        data = response.json()
+
+        services = []
+        if 'results' in data and 'BR' in data['results']:
+            brazil_providers = data['results']['BR'].get('flatrate', [])
+            services = [provider['provider_name'] for provider in brazil_providers]
+
+        return services
+
     @commands.command(name='filme')
     async def fetch_movie(self, ctx, *, movie_title):
         user_api_key = self.get_user_api_key(ctx.author.id)
@@ -56,7 +64,6 @@ class FilmeCog(commands.Cog):
             await ctx.send("Você precisa configurar sua chave da API do TMDb primeiro usando o comando !configurar_api")
             return
 
-        
         search_url = f"https://api.themoviedb.org/3/search/movie?api_key={user_api_key}&query={movie_title}"
         search_response = requests.get(search_url).json()
 
@@ -79,21 +86,25 @@ class FilmeCog(commands.Cog):
         poster_url = f"https://image.tmdb.org/t/p/original{poster_path}" if poster_path else ''
         tmdb_url = f"https://www.themoviedb.org/movie/{movie_id}"
 
-        
+        streaming_services = self.get_streaming_services(movie_id, user_api_key)
+
         trailer_url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key={user_api_key}"
         trailer_response = requests.get(trailer_url).json()
         trailer_link = next((f"https://www.youtube.com/watch?v={video['key']}" 
                              for video in trailer_response.get('results', []) 
                              if video['site'] == 'YouTube' and video['type'] == 'Trailer'), None)
 
-        
         description = f"""**Título:** {title}
-    **Data de Lançamento:** {release_date}
-    **Gêneros:** {genres}
-    **Duração:** {duration}
-    **Classificação:** {rating}/10 baseado em {votes} votos
-    **Enredo:** {plot}
-    **Link TMDb:** [Clique Aqui]({tmdb_url})"""
+**Data de Lançamento:** {release_date}
+**Gêneros:** {genres}
+**Duração:** {duration}
+**Classificação:** {rating}/10 baseado em {votes} votos
+**Enredo:** {plot}
+**Link TMDb:** [Clique Aqui]({tmdb_url})"""
+
+        if streaming_services:
+            streaming_info = "**Disponível em:** " + ", ".join(streaming_services)
+            description += f"\n{streaming_info}"
 
         if trailer_link:
             description += f"\n**Trailer:** [Assistir no YouTube]({trailer_link})"
@@ -147,6 +158,57 @@ class FilmeCog(commands.Cog):
 
         for i in range(0, len(message), 2000):
             await ctx.send(message[i:i+2000])
+
+    @commands.command(name='pessoa')
+    async def fetch_person(self, ctx, *, person_name):
+        user_api_key = self.get_user_api_key(ctx.author.id)
+        if not user_api_key:
+            await ctx.send("Você precisa configurar sua chave da API do TMDb primeiro usando o comando !configurar_api")
+            return
+    
+        
+        search_url = f"https://api.themoviedb.org/3/search/person?api_key={user_api_key}&query={person_name}"
+        search_response = requests.get(search_url)
+        search_data = search_response.json()
+    
+        if not search_data['results']:
+            await ctx.send("Pessoa não encontrada.")
+            return
+    
+        person = search_data['results'][0]
+        person_id = person.get('id', 'N/A')
+    
+        
+        person_url = f"https://api.themoviedb.org/3/person/{person_id}?api_key={user_api_key}&language=pt-BR"
+        person_response = requests.get(person_url)
+        person_data = person_response.json()
+    
+        
+        profile_path = person_data.get('profile_path')
+        profile_url = f"https://image.tmdb.org/t/p/w500{profile_path}" if profile_path else None
+    
+        name = person_data.get('name', 'N/A')
+        known_for_department = person_data.get('known_for_department', 'Desconhecido')
+        bio = person_data.get('biography', 'Biografia não disponível.')
+        birth_date = person_data.get('birthday', 'Data de nascimento desconhecida')
+        birth_place = person_data.get('place_of_birth', 'Local de nascimento desconhecido')
+        death_date = person_data.get('deathday', 'Vivo')
+        popularity = person_data.get('popularity', 'N/A')
+        tmdb_url = f"https://www.themoviedb.org/person/{person_id}"
+    
+        description = (f"**Nome:** {name}\n"
+                       f"**Conhecido(a) por:** {known_for_department}\n"
+                       f"**Data de Nascimento:** {birth_date}\n"
+                       f"**Local de Nascimento:** {birth_place}\n"
+                       f"**Data de Falecimento:** {death_date if death_date else 'Vivo'}\n"
+                       f"**Popularidade:** {popularity}\n"
+                       f"**Biografia:** {bio}\n"
+                       f"**Link TMDb:** [Clique Aqui]({tmdb_url})")
+    
+        embed = discord.Embed(title="Informação da Pessoa", description=description, color=0x00ff00)
+        if profile_url:
+            embed.set_thumbnail(url=profile_url)
+        await ctx.send(embed=embed)
   
 async def setup(bot):
     await bot.add_cog(FilmeCog(bot))

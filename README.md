@@ -47,4 +47,8 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - Plataforma onde os filmes estao disponiveis ## - implementado 28/12/2023
 - busca por atores ## - implementado 28/12/2023
 - alterar da lib requests para aiohttp
-
+- Informações de Elenco e Equipe - ## - implementado 28/12/2023
+- Integração com Redes Sociais
+- Integração com Plataformas de Streaming
+- Arrumar output do !top_filmes X
+- Monitoramento API 

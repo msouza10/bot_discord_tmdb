@@ -25,13 +25,15 @@ class BotEvents(commands.Cog):
       embed.add_field(name="!configurar_api",
                       value="Configura sua chave da API do TMDb.", inline=False)
       embed.add_field(name="!filme <titulo>",
-                      value="Busca informações sobre um filme.", inline=False)
+                      value="Busca informações sobre um filme. Exemplo: `!filme Oppenheimer `.", inline=False)
       embed.add_field(name="!top_filmes [N]",
                       value="Mostra os top N filmes mais bem avaliados. Exemplo: `!top_filmes 20`", inline=False)
       embed.add_field(name="!top_filmes [X-Y]",
                       value="Mostra os filmes mais bem avaliados em um intervalo específico. Exemplo: `!top_filmes 10-20`.", inline=False)
       embed.add_field(name="!pessoa <nome>",
         value="Busca informações sobre uma pessoa específica na indústria cinematográfica, como atores, diretores, etc. Fornece detalhes como nome, biografia, data de nascimento, local de nascimento, papéis notáveis e mais. Exemplo: `!pessoa Brad Pitt`.", inline=False)
+      embed.add_field(name="!elenco <titulo>",
+        value="Busca informações sobre o elenco do filme. Exemplo: `!elenco Oppenheimer `.", inline=False)
   
       await ctx.send(embed=embed)
         

@@ -6,7 +6,15 @@ import asyncio
 class FilmeCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+    async def make_tmdb_request(self, url):
+      try:
+          response = requests.get(url)
+          response.raise_for_status()
+          return response.json()
+      except requests.RequestException as e:
+          print(f"Erro ao fazer requisição para o TMDb: {e}")
+          return None
+        
     async def is_valid_api_key(self, api_key):
         """Verifica se a chave da API do TMDb é válida."""
         test_url = f"https://api.themoviedb.org/3/movie/550?api_key={api_key}"
@@ -169,10 +177,9 @@ class FilmeCog(commands.Cog):
         
         search_url = f"https://api.themoviedb.org/3/search/person?api_key={user_api_key}&query={person_name}"
         search_response = requests.get(search_url)
-        search_data = search_response.json()
-    
-        if not search_data['results']:
-            await ctx.send("Pessoa não encontrada.")
+        search_data = await self.make_tmdb_request(search_url)
+        if not search_data or not search_data['results']:
+            await ctx.send("Pessoa não encontrado.")
             return
     
         person = search_data['results'][0]
@@ -209,6 +216,37 @@ class FilmeCog(commands.Cog):
         if profile_url:
             embed.set_thumbnail(url=profile_url)
         await ctx.send(embed=embed)
+
+    @commands.command(name='elenco')
+    async def fetch_cast_and_crew(self, ctx, *, movie_title):
+        user_api_key = self.get_user_api_key(ctx.author.id)
+        if not user_api_key:
+            await ctx.send("Você precisa configurar sua chave da API do TMDb primeiro usando o comando !configurar_api")
+            return
+
+        search_url = f"https://api.themoviedb.org/3/search/movie?api_key={user_api_key}&query={movie_title}"
+        search_response = requests.get(search_url).json()
+
+        if not search_response['results']:
+            await ctx.send("Filme não encontrado.")
+            return
+
+        movie_id = search_response['results'][0]['id']
+
+        credits_url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key={user_api_key}"
+        credits_response = requests.get(credits_url).json()
+
+        cast = credits_response.get('cast', [])[:10]  # Limita aos 10 primeiros membros do elenco
+        crew = credits_response.get('crew', [])[:10]  # Limita aos 10 primeiros membros da equipe técnica
+
+        cast_names = ', '.join([member['name'] for member in cast])
+        crew_names = ', '.join([member['name'] + ' (' + member['job'] + ')' for member in crew])
+
+        description = f"**Elenco:** {cast_names}\n**Equipe:** {crew_names}"
+
+        embed = discord.Embed(title=f"Elenco e Equipe de '{search_response['results'][0]['title']}'", description=description, color=0x00ff00)
+        await ctx.send(embed=embed)
+
   
 async def setup(bot):
     await bot.add_cog(FilmeCog(bot))

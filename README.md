@@ -42,7 +42,7 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - Funcionalidades Avançadas de Pesquisa
 - Notificações de Lançamentos e Eventos
 - API_KEY em DM ## - implementado 27/12/2023
-- Rota inicial de configuracao
+- Rota inicial de configuracao ## - implementado 26/12/2023
 - Comando de !ajuda ## - implementado 27/12/2023
 - Plataforma onde os filmes estao disponiveis ## - implementado 28/12/2023
 - busca por atores ## - implementado 28/12/2023
@@ -51,4 +51,5 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - Integração com Redes Sociais
 - Integração com Plataformas de Streaming
 - Arrumar output do !top_filmes X
-- Monitoramento API 
+- Monitoramento API
+- **Critico** Comandos vazios nao retornam erros ou auxilios para o usuario.

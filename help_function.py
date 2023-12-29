@@ -34,6 +34,8 @@ class BotEvents(commands.Cog):
         value="Busca informações sobre uma pessoa específica na indústria cinematográfica, como atores, diretores, etc. Fornece detalhes como nome, biografia, data de nascimento, local de nascimento, papéis notáveis e mais. Exemplo: `!pessoa Brad Pitt`.", inline=False)
       embed.add_field(name="!elenco <titulo>",
         value="Busca informações sobre o elenco do filme. Exemplo: `!elenco Oppenheimer `.", inline=False)
+      embed.add_field(name="!canal_notificacoes <nome>",
+        value="Escolhe um canal para receber notificacoes sobre novos filmes, esse comando funciona para administradores do server discord. Exemplo: `!canal_notificacoes Cine-News`.", inline=False)
   
       await ctx.send(embed=embed)
         

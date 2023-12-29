@@ -1,7 +1,9 @@
+import asyncio
+
 import discord
 from discord.ext import commands
+
 from database import Database
-import asyncio
 
 DISCORD_BOT_TOKEN = 'MTE4OTM2NjAxNDY4OTk0NzY0OA.G593pZ.vxMikBefahxwcNwlHcSBC7LtyCyGczySAngQQs'
 
@@ -21,6 +23,7 @@ async def main():
 
     await bot.load_extension('search')
     await bot.load_extension('help_function')
+    await bot.load_extension('movie_notifications')
 
     await bot.start(DISCORD_BOT_TOKEN)
 

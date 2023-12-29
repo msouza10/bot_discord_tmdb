@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime, timedelta
 
 class Database:
     def __init__(self, db_path):
@@ -25,3 +26,9 @@ class Database:
         cursor = self.conn.execute(query, (user_id,))
         result = cursor.fetchone()
         return result[0] if result else None
+
+    def clean_notified_movies(self):
+      cutoff_date = datetime.now() - timedelta(hours=48)
+      query = "DELETE FROM notified_movies WHERE notified_date < ?"
+      self.conn.execute(query, (cutoff_date,))
+      self.conn.commit()

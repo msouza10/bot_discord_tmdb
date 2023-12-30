@@ -40,7 +40,7 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - Cache de Resultados
 - Recomendações Personalizadas
 - Funcionalidades Avançadas de Pesquisa
-- Notificações de Lançamentos e Eventos
+- Notificações de Lançamentos e Eventos - ## Melhorar
 - API_KEY em DM ## - implementado 27/12/2023
 - Rota inicial de configuracao ## - implementado 26/12/2023
 - Comando de !ajuda ## - implementado 27/12/2023

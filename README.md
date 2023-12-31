@@ -21,10 +21,18 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - `!top_filmes`: Mostra os 10 filmes mais bem avaliados no TMDb.
 - `!top_filmes [N]`: Mostra os top N filmes mais bem avaliados. Exemplo: `!top_filmes 20`.
 - `!top_filmes [X-Y]`: Mostra os filmes mais bem avaliados em um intervalo específico. Exemplo: `!top_filmes 10-20`.
-- `!ajuda`: Mostra como utilizar os comandos do bot.
 - `!elenco [título do filme]`: Busca informações sobre o elenco do filme. Exemplo: `!elenco Oppenheimer`.
 - `!pessoa [nome]`: Busca informações sobre uma pessoa específica na indústria cinematográfica. Exemplo: `!pessoa Brad Pitt`.
 - `!recomendacao [título do filme]`: Recomenda filmes com base em um título fornecido. Exemplo: `!recomendacao 300`.
+- `!canal_notificacoes [nome_do_canal]`: Define um canal para receber notificações sobre novos filmes e eventos. Exemplo: `!canal_notificacoes Cine-News`.
+- `!verificar_notificacoes`: Reenvia todas as notificações pendentes para o canal definido.
+
+## 🔔 Sistema de Notificações
+
+- O bot fornece notificações sobre lançamentos de filmes e eventos relevantes.
+- As notificações são enviadas para um canal específico do Discord definido pelo comando `!canal_notificacoes`.
+- Para verificar notificações pendentes ou reenviá-las, use o comando `!verificar_notificacoes`.
+- Este recurso é especialmente útil para manter os usuários atualizados sobre os últimos lançamentos e notícias do cinema.
 
 ## 🗃️ Limites e Funcionamento do Banco de Dados
 

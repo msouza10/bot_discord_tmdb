@@ -36,6 +36,10 @@ class BotEvents(commands.Cog):
         value="Busca informações sobre o elenco do filme. Exemplo: `!elenco Oppenheimer `.", inline=False)
       embed.add_field(name="!canal_notificacoes <nome>",
         value="Escolhe um canal para receber notificacoes sobre novos filmes, esse comando funciona para administradores do server discord. Exemplo: `!canal_notificacoes Cine-News`.", inline=False)
+      embed.add_field(name="!verificar_notificacoes",
+        value="Reenvia todas as notificações para o canal escolhido", inline=False)
+      embed.add_field(name="!recomendacao <titulo>",
+        value= "Recomenda um filme com base no nome de outro filme. Exemplo: `!recomendacao 300`.", inline=False)
   
       await ctx.send(embed=embed)
         

@@ -181,7 +181,7 @@ class MovieNotificationsCog(commands.Cog):
     async def before_upcoming_movies_check(self):
         await self.bot.wait_until_ready()
 
-    @commands.command(name='verificar_filmes')
+    @commands.command(name='verificar_notificacoes')
     @commands.has_permissions(administrator=True)
     async def run_upcoming_movies_check(self, ctx):
         confirmation_message = await ctx.send("Tem certeza que deseja executar a verificação e reenviar todas as notificações? ✅ para confirmar.")

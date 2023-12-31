@@ -23,38 +23,51 @@ class RecomendacaoFilmeCog(commands.Cog):
         return None
 
     async def obter_detalhes_filme(self, api_key, movie_id):
-        movie_url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}"
-        response = requests.get(movie_url)
-        if response.status_code == 200:
-            movie_response = response.json()
-            return {
-                "title": movie_response.get('title', 'N/A'),
-                "plot": movie_response.get('overview', 'Descrição não disponível.'),
-                "release_date": movie_response.get('release_date', 'Data desconhecida'),
-                "genres": ", ".join([genre['name'] for genre in movie_response.get('genres', [])]),
-                "duration": f"{movie_response.get('runtime', 'N/A')} minutos",
-                "rating": movie_response.get('vote_average', 'N/A'),
-                "votes": movie_response.get('vote_count', 'N/A'),
-                "poster_url": f"https://image.tmdb.org/t/p/original{movie_response.get('poster_path', '')}",
-                "tmdb_url": f"https://www.themoviedb.org/movie/{movie_id}"
-            }
-        else:
-            return None
+      # Detalhes básicos do filme
+      movie_url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}"
+      movie_response = requests.get(movie_url).json()
+  
+      # Busca por plataformas de streaming
+      streaming_url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={api_key}"
+      streaming_response = requests.get(streaming_url).json()
+      streaming_services = [provider['provider_name'] for provider in streaming_response.get('results', {}).get('BR', {}).get('flatrate', [])]
+  
+      # Busca pelo trailer
+      trailer_url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key={api_key}"
+      trailer_response = requests.get(trailer_url).json()
+      trailer_link = next((f"https://www.youtube.com/watch?v={video['key']}"
+                           for video in trailer_response.get('results', [])
+                           if video['site'] == 'YouTube' and video['type'] == 'Trailer'), None)
+  
+      return {
+          "title": movie_response.get('title', 'N/A'),
+          "plot": movie_response.get('overview', 'Descrição não disponível.'),
+          "release_date": movie_response.get('release_date', 'Data desconhecida'),
+          "genres": ", ".join([genre['name'] for genre in movie_response.get('genres', [])]),
+          "duration": f"{movie_response.get('runtime', 'N/A')} minutos",
+          "rating": movie_response.get('vote_average', 'N/A'),
+          "votes": movie_response.get('vote_count', 'N/A'),
+          "poster_url": f"https://image.tmdb.org/t/p/original{movie_response.get('poster_path', '')}",
+          "tmdb_url": f"https://www.themoviedb.org/movie/{movie_id}",
+          "streaming_services": streaming_services,
+          "trailer_link": trailer_link
+      }
 
-    async def recomendar_filme(self, api_key, movie_id, max_recomendacoes=5):
-        url = f"https://api.themoviedb.org/3/movie/{movie_id}/recommendations?api_key={api_key}&language=pt-BR"
-        response = await self.bot.loop.run_in_executor(None, requests.get, url)
-        if response.status_code == 200:
-            data = response.json()
-            recomendacoes = []
-            for filme in data['results'][:max_recomendacoes]:
-                detalhes_filme = await self.obter_detalhes_filme(api_key, filme['id'])
-                recomendacoes.append(detalhes_filme)
-            return recomendacoes
-        return None
+    async def recomendar_filme(self, api_key, movie_id, max_recomendacoes=3):
+      url = f"https://api.themoviedb.org/3/movie/{movie_id}/recommendations?api_key={api_key}&language=pt-BR"
+      response = await self.bot.loop.run_in_executor(None, requests.get, url)
+      if response.status_code == 200:
+          data = response.json()
+          recomendacoes = []
+          for filme in data['results'][:max_recomendacoes]:
+              detalhes_filme = await self.obter_detalhes_filme(api_key, filme['id'])
+              recomendacoes.append(detalhes_filme)
+          return recomendacoes
+      return None
+
 
     @commands.command(name='recomendacao')
-    async def recomendacao_command(self, ctx, nome_filme, max_recomendacoes: int = 3):
+    async def recomendacao_command(self, ctx, nome_filme, max_recomendacoes: int = 5):
         user_id = ctx.author.id
         api_key = await self.buscar_api_key_usuario(user_id)
         if api_key:
@@ -64,14 +77,21 @@ class RecomendacaoFilmeCog(commands.Cog):
                 if recomendacoes:
                     for filme in recomendacoes:
                         if filme:
-                            embed = discord.Embed(title=filme['title'], color=0x00ff00)
-                            embed.add_field(name="Data de Lançamento", value=filme['release_date'], inline=True)
-                            embed.add_field(name="Gêneros", value=filme['genres'], inline=True)
-                            embed.add_field(name="Duração", value=filme['duration'], inline=True)
-                            embed.add_field(name="Classificação", value=f"{filme['rating']}/10", inline=True)
-                            embed.add_field(name="Votos", value=filme['votes'], inline=True)
-                            embed.add_field(name="Enredo", value=filme['plot'], inline=False)
-                            embed.add_field(name="Link TMDb", value=f"[Clique Aqui]({filme['tmdb_url']})", inline=False)
+                            description = (
+                                f"**Título:** {filme['title']}\n"
+                                f"**Data de Lançamento:** {filme['release_date']}\n"
+                                f"**Gêneros:** {filme['genres']}\n"
+                                f"**Duração:** {filme['duration']}\n"
+                                f"**Classificação:** {filme['rating']}/10 baseado em {filme['votes']} votos\n"
+                                f"**Enredo:** {filme['plot']}\n"
+                                f"**Link TMDb:** [Clique Aqui]({filme['tmdb_url']})"
+                            )
+                            if filme['streaming_services']:
+                                description += f"\n**Disponível em:** {', '.join(filme['streaming_services'])}"
+                            if filme['trailer_link']:
+                                description += f"\n**Trailer:** [Assistir no YouTube]({filme['trailer_link']})"
+
+                            embed = discord.Embed(title="Informação do Filme", description=description, color=0x00ff00)
                             if filme['poster_url']:
                                 embed.set_image(url=filme['poster_url'])
                             await ctx.send(embed=embed)

@@ -18,6 +18,7 @@ async def main():
     await bot.load_extension('search')
     await bot.load_extension('help_function')
     await bot.load_extension('movie_notifications')
+    await bot.load_extension('recommend_movie')
 
     @bot.event
     async def on_ready():

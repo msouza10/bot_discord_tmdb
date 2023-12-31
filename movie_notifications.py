@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-import aiohttp  # Importando aiohttp para operações HTTP assíncronas
+import aiohttp  
 import asyncio
 import datetime
 

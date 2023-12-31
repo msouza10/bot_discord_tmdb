@@ -66,7 +66,22 @@ class FilmeCog(commands.Cog):
         return services
 
     @commands.command(name='filme')
-    async def fetch_movie(self, ctx, *, movie_title):
+    async def fetch_movie(self, ctx, *, movie_title: str = ""):
+        if movie_title.strip() == "":
+            embed = discord.Embed(
+                title="Comando Executado de Forma Incorreta",
+                description="Você esqueceu de informar o título do filme.",
+                color=discord.Color.red()
+            )
+            embed.add_field(
+                name="Como usar o comando !filme",
+                value="`!filme [título do filme]` - Busca informações sobre um filme específico.\n"
+                      "Exemplo: `!filme Inception`.",
+                inline=False
+            )
+            await ctx.send(embed=embed)
+            return
+          
         user_api_key = self.get_user_api_key(ctx.author.id)
         if not user_api_key:
             await ctx.send("Você precisa configurar sua chave da API do TMDb primeiro usando o comando !configurar_api")
@@ -128,11 +143,11 @@ class FilmeCog(commands.Cog):
         if not user_api_key:
             await ctx.send("Você precisa configurar sua chave da API do TMDb primeiro usando o comando !configurar_api")
             return
-
+  
         base_url = "https://api.themoviedb.org/3/movie/top_rated"
         filmes = []
         page = 1
-
+  
         if args:
             if '-' in args:
                 start, end = map(int, args.split('-'))
@@ -140,32 +155,39 @@ class FilmeCog(commands.Cog):
                 start, end = 1, int(args)
         else:
             start, end = 1, 10
-
+  
         if end > 250 or start > 250:
             await ctx.send("O limite máximo é 250 filmes. Por favor, ajuste o seu pedido.")
             return
-
+  
         start, end = max(1, start), min(end, 250)
         if start > end:
             await ctx.send("Intervalo inválido. Por favor, forneça um intervalo válido.")
             return
-
+  
         while len(filmes) < end:
             url = f"{base_url}?api_key={user_api_key}&page={page}"
             response = requests.get(url).json()
             filmes.extend(response['results'])
             page += 1
-
+  
             if page > response['total_pages']:
                 break
-
+  
         filmes = filmes[start-1:end]
-
-        message_lines = [f"{i+start}. {filme['title']} - Avaliação: {filme['vote_average']}/10" for i, filme in enumerate(filmes)]
-        message = "\n".join(message_lines)
-
-        for i in range(0, len(message), 2000):
-            await ctx.send(message[i:i+2000])
+  
+        message_lines = [
+            f"{i+start}. [{filme['title']}](<https://www.themoviedb.org/movie/{filme['id']}>) - Avaliação: {filme['vote_average']}/10"
+            for i, filme in enumerate(filmes)
+        ]
+        total_filmes = len(message_lines)
+        filmes_por_mensagem = 25
+  
+        for i in range(0, total_filmes, filmes_por_mensagem):
+            fim_intervalo = min(i + filmes_por_mensagem, total_filmes)
+            mensagem_filmes = "\n".join(message_lines[i:fim_intervalo])
+            await ctx.send(mensagem_filmes)
+            await asyncio.sleep(1)
 
     @commands.command(name='pessoa')
     async def fetch_person(self, ctx, *, person_name):

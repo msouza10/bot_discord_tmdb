@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import requests
+import logging
 import asyncio  
 
 class FilmeCog(commands.Cog):
@@ -137,17 +138,19 @@ class FilmeCog(commands.Cog):
             embed.set_image(url=poster_url)
         await ctx.send(embed=embed)
 
+
     @commands.command(name='top_filmes')
     async def fetch_top_movies(self, ctx, *, args=None):
+        logging.basicConfig(level=logging.INFO)
         user_api_key = self.get_user_api_key(ctx.author.id)
         if not user_api_key:
             await ctx.send("Você precisa configurar sua chave da API do TMDb primeiro usando o comando !configurar_api")
             return
-  
+
         base_url = "https://api.themoviedb.org/3/movie/top_rated"
         filmes = []
         page = 1
-  
+
         if args:
             if '-' in args:
                 start, end = map(int, args.split('-'))
@@ -155,40 +158,55 @@ class FilmeCog(commands.Cog):
                 start, end = 1, int(args)
         else:
             start, end = 1, 10
-  
+
         if end > 250 or start > 250:
             await ctx.send("O limite máximo é 250 filmes. Por favor, ajuste o seu pedido.")
             return
-  
+
         start, end = max(1, start), min(end, 250)
         if start > end:
             await ctx.send("Intervalo inválido. Por favor, forneça um intervalo válido.")
             return
-  
+
         while len(filmes) < end:
             url = f"{base_url}?api_key={user_api_key}&page={page}"
-            response = requests.get(url).json()
-            filmes.extend(response['results'])
-            page += 1
-  
-            if page > response['total_pages']:
-                break
-  
+            try:
+                response = requests.get(url).json()
+                filmes.extend(response['results'])
+                logging.info(f"Page {page}: {len(response['results'])} filmes carregados")
+                page += 1
+                if page > response['total_pages']:
+                    break
+            except Exception as e:
+                await ctx.send(f"Erro ao acessar a API do TMDb: {e}")
+                logging.error(f"Erro ao acessar a API: {e}")
+                return
+
+        if not filmes:
+            await ctx.send("Nenhum filme encontrado.")
+            return
+
         filmes = filmes[start-1:end]
-  
+        logging.info(f"Total de filmes processados: {len(filmes)}")
+
         message_lines = [
             f"{i+start}. [{filme['title']}](<https://www.themoviedb.org/movie/{filme['id']}>) - Avaliação: {filme['vote_average']}/10"
             for i, filme in enumerate(filmes)
         ]
+
         total_filmes = len(message_lines)
         filmes_por_mensagem = 25
-  
-        for i in range(0, total_filmes, filmes_por_mensagem):
-            fim_intervalo = min(i + filmes_por_mensagem, total_filmes)
-            mensagem_filmes = "\n".join(message_lines[i:fim_intervalo])
-            await ctx.send(mensagem_filmes)
-            await asyncio.sleep(1)
+        mensagem_filmes = "\n".join(message_lines)
 
+        while mensagem_filmes:
+          if len(mensagem_filmes) > 2000:
+            indice_corte = mensagem_filmes.rfind('\n', 0, 2000)
+            parte_mensagem, mensagem_filmes = mensagem_filmes[:indice_corte], mensagem_filmes[indice_corte+1:]
+          else:
+            parte_mensagem, mensagem_filmes = mensagem_filmes, ''
+
+          await ctx.send(parte_mensagem)
+          await asyncio.sleep(1)
     @commands.command(name='pessoa')
     async def fetch_person(self, ctx, *, person_name):
         user_api_key = self.get_user_api_key(ctx.author.id)

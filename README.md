@@ -60,7 +60,7 @@ Antes de começar a usar o bot, cada usuário precisa configurar sua chave da AP
 - Informações de Elenco e Equipe - Implementado em 28/12/2023
 - Integração com Redes Sociais
 - Integração com Plataformas de Streaming
-- Ajuste no output do `!top_filmes [X]`
+- Ajuste no output do `!top_filmes [X]` - Implementado em 01/01/2024
 - Monitoramento da API
 - **Crítico**: Comandos vazios não retornam erros ou auxílios para o usuário.
 - Suporte Multilíngue

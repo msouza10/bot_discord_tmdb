@@ -25,6 +25,14 @@ class Database:
             notified_date TIMESTAMP NOT NULL
         );
         """
+        user_session_query = """
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            user_id INTEGER PRIMARY KEY,
+            session_id TEXT,
+            account_id TEXT
+        );
+        """
+        self.conn.execute(user_session_query)
         self.conn.execute(user_api_key_query)
         self.conn.execute(notification_channel_query)
         self.conn.execute(notified_movies_query)
@@ -67,4 +75,15 @@ class Database:
       query = "DELETE FROM notified_movies WHERE notified_date < ?"
       self.conn.execute(query, (cutoff_date,))
       self.conn.commit()
+
+    def set_user_session(self, user_id, session_id):
+      query = "REPLACE INTO user_sessions (user_id, session_id) VALUES (?, ?, ?)"
+      self.conn.execute(query, (user_id, session_id))
+      self.conn.commit()
+
+    def get_user_session_id(self, user_id):
+      query = "SELECT session_id, account_id FROM user_sessions WHERE user_id = ?"
+      cursor = self.conn.execute(query, (user_id,))
+      result = cursor.fetchone()
+      return result if result else (None, None)
 

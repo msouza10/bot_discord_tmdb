@@ -41,7 +41,7 @@ class BotEvents(commands.Cog):
       embed.add_field(name="!recomendacao <titulo>",
         value= "Recomenda um filme com base no nome de outro filme. Exemplo: `!recomendacao 300`.", inline=False)
   
-      await ctx.send(embed=embed)
+      await ctx.send(embed)
         
 
 async def setup(bot):

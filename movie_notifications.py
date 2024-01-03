@@ -15,7 +15,7 @@ class MovieNotificationsCog(commands.Cog):
 
     async def load_notification_channel_id(self):
       print("Carregando ID do canal de notificações...")
-      result = await self.bot.database.get_notification_channel()
+      result = self.bot.database.get_notification_channel()
       if result:
         self.notification_channel_id = result
         print(f"ID do canal de notificações carregado: {self.notification_channel_id}")

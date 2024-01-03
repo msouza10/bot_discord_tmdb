@@ -1,20 +1,27 @@
-import discord
-from discord.ext import commands
-import requests
+import asyncio
 import logging
-import asyncio  
+from datetime import datetime as dt, timedelta
+from filmeview import FilmeView
+import discord
+import requests
+from discord.ext import commands
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class FilmeCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        logging.info("FilmeCog inicializado")
+
     async def make_tmdb_request(self, url):
-      try:
-          response = requests.get(url)
-          response.raise_for_status()
-          return response.json()
-      except requests.RequestException as e:
-          print(f"Erro ao fazer requisição para o TMDb: {e}")
-          return None
+        logging.info(f"Fazendo requisição para o TMDb: {url}")
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            logging.error(f"Erro ao fazer requisição para o TMDb: {e}")
+            return None
         
     async def is_valid_api_key(self, api_key):
         """Verifica se a chave da API do TMDb é válida."""
@@ -29,6 +36,49 @@ class FilmeCog(commands.Cog):
                 return False
         except requests.RequestException:
             return False
+
+    async def create_request_token(self, api_key):
+      url = f"https://api.themoviedb.org/3/authentication/token/new?api_key={api_key}"
+      response = await self.bot.session.get(url)
+      data = await response.json()
+      return data.get('request_token')
+
+    async def create_session(self, api_key, request_token):
+      url = f"https://api.themoviedb.org/3/authentication/session/new?api_key={api_key}"
+      data = {'request_token': request_token}
+      response = await self.bot.session.post(url, json=data)
+      session_data = await response.json()
+      return session_data.get('session_id')
+
+    @commands.command(name='iniciar_autenticacao')
+    async def start_authentication(self, ctx):
+        logging.info("Comando iniciar_autenticacao chamado")
+        user_api_key = self.get_user_api_key(ctx.author.id)
+        if not user_api_key:
+            await ctx.send("Você precisa configurar sua chave da API do TMDB primeiro.")
+            return
+
+        request_token = await self.create_request_token(user_api_key)
+        if request_token:
+            authorization_url = f"https://www.themoviedb.org/authenticate/{request_token}"
+            await ctx.send(f"Por favor, autorize o acesso em: {authorization_url}\nVocê tem 3 minutos para concluir a autenticação.")
+
+            # Espera pela confirmação da autenticação
+            print("Data e hora atual:", dt.now())
+            end_time = dt.now() + timedelta(minutes=3)
+            print("Data e hora após 3 minutos:", end_time)
+            while dt.now() < end_time:
+                session_id = await self.create_session(user_api_key, request_token)
+                if session_id:
+                    # Salve o session_id no banco de dados
+                    self.bot.database.set_user_session(ctx.author.id, session_id)
+                    await ctx.send("Autenticação realizada com sucesso.")
+                    return
+                await asyncio.sleep(10)   # Verifica a cada 10 segundos
+
+            await ctx.send("Tempo de autenticação expirado. Tente novamente.")
+        else:
+            await ctx.send("Não foi possível criar um token de requisição. Tente novamente mais tarde.")
 
     @commands.command(name='configurar_api')
     async def set_api_key(self, ctx):
@@ -68,7 +118,10 @@ class FilmeCog(commands.Cog):
 
     @commands.command(name='filme')
     async def fetch_movie(self, ctx, *, movie_title: str = ""):
+        logging.info(f"Comando !filme chamado por {ctx.author} com o título: '{movie_title}'")
+  
         if movie_title.strip() == "":
+            logging.warning("Título do filme não fornecido")
             embed = discord.Embed(
                 title="Comando Executado de Forma Incorreta",
                 description="Você esqueceu de informar o título do filme.",
@@ -76,17 +129,32 @@ class FilmeCog(commands.Cog):
             )
             embed.add_field(
                 name="Como usar o comando !filme",
-                value="`!filme [título do filme]` - Busca informações sobre um filme específico.\n"
-                      "Exemplo: `!filme Inception`.",
+                value="`!filme [título do filme]` - Busca informações sobre um filme específico.\nExemplo: `!filme Inception`.",
                 inline=False
             )
             await ctx.send(embed=embed)
             return
-          
+  
         user_api_key = self.get_user_api_key(ctx.author.id)
         if not user_api_key:
+            logging.warning(f"Usuário {ctx.author} não configurou a chave da API do TMDb")
             await ctx.send("Você precisa configurar sua chave da API do TMDb primeiro usando o comando !configurar_api")
             return
+  
+        session_id = self.bot.database.get_user_session_id(ctx.author.id)
+        if not session_id:
+            logging.info(f"Usuário {ctx.author} não autenticado")
+            await ctx.send("Você não está autenticado e não poderá usar algumas funções adicionais, como adicionar a favoritos ou à watchlist. Deseja continuar mesmo assim? (responda com 'sim' para continuar)")
+            try:
+                confirmation = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30.0)
+                if confirmation.content.lower() != 'sim':
+                    logging.info(f"Usuário {ctx.author} optou por não continuar sem autenticação")
+                    await ctx.send("Comando cancelado.")
+                    return
+            except asyncio.TimeoutError:
+                logging.warning(f"Usuário {ctx.author} não respondeu a tempo")
+                await ctx.send("Tempo esgotado. Comando cancelado.")
+                return
 
         search_url = f"https://api.themoviedb.org/3/search/movie?api_key={user_api_key}&query={movie_title}"
         search_response = requests.get(search_url).json()
@@ -94,7 +162,7 @@ class FilmeCog(commands.Cog):
         if not search_response['results']:
             await ctx.send("Filme não encontrado.")
             return
-
+     
         movie_id = search_response['results'][0]['id']
         movie_url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={user_api_key}"
         movie_response = requests.get(movie_url).json()
@@ -133,11 +201,18 @@ class FilmeCog(commands.Cog):
         if trailer_link:
             description += f"\n**Trailer:** [Assistir no YouTube]({trailer_link})"
 
+        if session_id:
+          logging.info(f"Usuário {ctx.author} autenticado, incluindo opções interativas")
+          view = FilmeView(movie_id, user_api_key, self.bot, session_id)
+        else:
+          logging.info(f"Usuário {ctx.author} não autenticado, omitindo opções interativas")
+          view = None
+
         embed = discord.Embed(title="Informação do Filme", description=description, color=0x00ff00)
         if poster_url:
-            embed.set_image(url=poster_url)
-        await ctx.send(embed=embed)
-
+          embed.set_image(url=poster_url)
+        await ctx.send(embed, view=view)
+        logging.info(f"Informações do filme '{movie_title}' enviadas para {ctx.author}")
 
     @commands.command(name='top_filmes')
     async def fetch_top_movies(self, ctx, *, args=None):
@@ -194,8 +269,7 @@ class FilmeCog(commands.Cog):
             for i, filme in enumerate(filmes)
         ]
 
-        total_filmes = len(message_lines)
-        filmes_por_mensagem = 25
+        len(message_lines)
         mensagem_filmes = "\n".join(message_lines)
 
         while mensagem_filmes:
@@ -216,7 +290,7 @@ class FilmeCog(commands.Cog):
     
         
         search_url = f"https://api.themoviedb.org/3/search/person?api_key={user_api_key}&query={person_name}"
-        search_response = requests.get(search_url)
+        requests.get(search_url)
         search_data = await self.make_tmdb_request(search_url)
         if not search_data or not search_data['results']:
             await ctx.send("Pessoa não encontrado.")

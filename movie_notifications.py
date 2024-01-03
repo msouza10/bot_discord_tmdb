@@ -98,24 +98,26 @@ class MovieNotificationsCog(commands.Cog):
             channel = ctx.channel
 
         if channel_name and len([ch for ch in ctx.guild.channels if ch.name == channel_name]) > 1:
-            await ctx.send("Aviso: Há mais de um canal com esse nome. Usando o primeiro encontrado.")
+          await ctx.send("Aviso: Há mais de um canal com esse nome. Usando o primeiro encontrado.")
 
-
-        confirmation_message = await ctx.send(f"Confirmar '{channel.name}' como o canal de notificações? ✅ para confirmar.")
+        confirmation_message = await ctx.send(f"Confirmar '{channel.name}' como o canal de notificações? ✅ para confirmar, ❌ para cancelar.")
         await confirmation_message.add_reaction("✅")
+        await confirmation_message.add_reaction("❌")
 
         def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) == '✅' and reaction.message.id == confirmation_message.id
+          return user == ctx.author and reaction.message.id == confirmation_message.id and str(reaction.emoji) in ['✅', '❌']
 
         try:
-            await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
+          reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
+          if str(reaction.emoji) == '✅':
+              self.notification_channel_id = channel.id
+              print(f"Canal de notificações definido para: {self.notification_channel_id}")
+              await ctx.send(f"Canal de notificações de filmes definido para: {channel.mention}")
+              await self.save_notification_channel_id()
+          else:
+              await ctx.send("Operação cancelada.")
         except asyncio.TimeoutError:
-            await ctx.send("Tempo esgotado. Canal de notificações não alterado.")
-        else:
-            self.notification_channel_id = channel.id
-            print(f"Canal de notificações definido para: {self.notification_channel_id}")
-            await ctx.send(f"Canal de notificações de filmes definido para: {channel.mention}")
-            await self.save_notification_channel_id()
+          await ctx.send("Tempo esgotado. Canal de notificações não alterado.")
 
     async def check_upcoming_movies(self, force_resend=False, ignore_limit=False):
       print("Iniciando a verificação de filmes em breve...")
@@ -184,21 +186,24 @@ class MovieNotificationsCog(commands.Cog):
     @commands.command(name='verificar_notificacoes')
     @commands.has_permissions(administrator=True)
     async def run_upcoming_movies_check(self, ctx):
-        confirmation_message = await ctx.send("Tem certeza que deseja executar a verificação e reenviar todas as notificações? ✅ para confirmar.")
-        await confirmation_message.add_reaction("✅")
+      confirmation_message = await ctx.send("Tem certeza que deseja executar a verificação e reenviar todas as notificações? ✅ para confirmar, ❌ para cancelar.")
+      await confirmation_message.add_reaction("✅")
+      await confirmation_message.add_reaction("❌")
 
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) == '✅' and reaction.message.id == confirmation_message.id
+      def check(reaction, user):
+          return user == ctx.author and reaction.message.id == confirmation_message.id and str(reaction.emoji) in ['✅', '❌']
 
-        try:
-            await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
-        except asyncio.TimeoutError:
-            await ctx.send("Tempo esgotado. Verificação cancelada.")
-            return
-
-        await ctx.send("Executando verificação de filmes em breve e reenviando notificações...")
-        await self.check_upcoming_movies(force_resend=True, ignore_limit=True)
-
+      try:
+          reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
+          if str(reaction.emoji) == '✅':
+              await ctx.send("Executando verificação de filmes em breve e reenviando notificações...")
+              await self.check_upcoming_movies(force_resend=True, ignore_limit=True)
+              
+          elif str(reaction.emoji) == '❌':
+              await ctx.send("Operação cancelada.")
+      except asyncio.TimeoutError:
+          await ctx.send("Tempo esgotado. Verificação cancelada.")
+        
 async def setup(bot):
     print("Configurando o bot...")
     cog = MovieNotificationsCog(bot)

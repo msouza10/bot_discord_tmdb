@@ -76,9 +76,9 @@ class Database:
       self.conn.execute(query, (cutoff_date,))
       self.conn.commit()
 
-    def set_user_session(self, user_id, session_id):
-      query = "REPLACE INTO user_sessions (user_id, session_id) VALUES (?, ?, ?)"
-      self.conn.execute(query, (user_id, session_id))
+    def set_user_session(self, user_id, session_id, account_id=None):
+      query = "REPLACE INTO user_sessions (user_id, session_id, account_id) VALUES (?, ?, ?)"
+      self.conn.execute(query, (user_id, session_id, account_id))
       self.conn.commit()
 
     def get_user_session_id(self, user_id):

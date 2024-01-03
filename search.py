@@ -141,20 +141,31 @@ class FilmeCog(commands.Cog):
             await ctx.send("Você precisa configurar sua chave da API do TMDb primeiro usando o comando !configurar_api")
             return
   
-        session_id = self.bot.database.get_user_session_id(ctx.author.id)
+        session_data = self.bot.database.get_user_session_id(ctx.author.id)
+        session_id = session_data[0] if session_data and session_data[0] is not None else None
+        logging.info(f"Valor de session_id para {ctx.author}: {session_id}")
         if not session_id:
-            logging.info(f"Usuário {ctx.author} não autenticado")
-            await ctx.send("Você não está autenticado e não poderá usar algumas funções adicionais, como adicionar a favoritos ou à watchlist. Deseja continuar mesmo assim? (responda com 'sim' para continuar)")
-            try:
-                confirmation = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30.0)
-                if confirmation.content.lower() != 'sim':
-                    logging.info(f"Usuário {ctx.author} optou por não continuar sem autenticação")
-                    await ctx.send("Comando cancelado.")
-                    return
-            except asyncio.TimeoutError:
-                logging.warning(f"Usuário {ctx.author} não respondeu a tempo")
-                await ctx.send("Tempo esgotado. Comando cancelado.")
-                return
+          logging.info(f"Usuário {ctx.author} não autenticado")
+          confirmation_message = await ctx.send("Você não está autenticado e não poderá usar algumas funções adicionais, como adicionar a favoritos ou à watchlist. Deseja continuar mesmo assim?")
+          await confirmation_message.add_reaction("✅")
+          await confirmation_message.add_reaction("❌")
+
+          def check(reaction, user):
+              return user == ctx.author and reaction.message.id == confirmation_message.id and str(reaction.emoji) in ['✅', '❌']
+
+          try:
+              reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+              if str(reaction.emoji) == '✅':
+                  logging.info(f"Usuário {ctx.author} optou por continuar sem autenticação")
+                  # Continue com a execução do comando
+              else:
+                  logging.info(f"Usuário {ctx.author} optou por não continuar")
+                  await ctx.send("Comando cancelado.")
+                  return
+          except asyncio.TimeoutError:
+              logging.warning(f"Usuário {ctx.author} não respondeu a tempo")
+              await ctx.send("Tempo esgotado. Comando cancelado.")
+              return
 
         search_url = f"https://api.themoviedb.org/3/search/movie?api_key={user_api_key}&query={movie_title}"
         search_response = requests.get(search_url).json()
@@ -201,8 +212,8 @@ class FilmeCog(commands.Cog):
         if trailer_link:
             description += f"\n**Trailer:** [Assistir no YouTube]({trailer_link})"
 
-        if session_id:
-          logging.info(f"Usuário {ctx.author} autenticado, incluindo opções interativas")
+        if session_id is not None:
+          logging.info(f"Usuário {ctx.author} autenticado com session_id: {session_id}, incluindo opções interativas")
           view = FilmeView(movie_id, user_api_key, self.bot, session_id)
         else:
           logging.info(f"Usuário {ctx.author} não autenticado, omitindo opções interativas")
@@ -211,7 +222,7 @@ class FilmeCog(commands.Cog):
         embed = discord.Embed(title="Informação do Filme", description=description, color=0x00ff00)
         if poster_url:
           embed.set_image(url=poster_url)
-        await ctx.send(embed, view=view)
+        await ctx.send(embed=embed, view=view)
         logging.info(f"Informações do filme '{movie_title}' enviadas para {ctx.author}")
 
     @commands.command(name='top_filmes')

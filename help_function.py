@@ -40,6 +40,8 @@ class BotEvents(commands.Cog):
         value="Reenvia todas as notificações para o canal escolhido", inline=False)
       embed.add_field(name="!recomendacao <titulo>",
         value= "Recomenda um filme com base no nome de outro filme. Exemplo: `!recomendacao 300`.", inline=False)
+      embed.add_field(name="!favoritos", value="Exibe a lista de seus filmes favoritos.", inline=False)
+      embed.add_field(name="!watchlist", value="Exibe a lista de filmes na sua watchlist.", inline=False)
   
       await ctx.send(embed = embed)
         

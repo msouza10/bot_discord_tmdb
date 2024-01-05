@@ -10,14 +10,6 @@ class FilmeView(View):
         self.bot = bot
         self.session_id = session_id
 
-        # Adiciona botões com IDs únicos
-        self.add_buttons()
-
-    def add_buttons(self):
-        # Cria e adiciona botões à view
-        self.add_item(Button(label="Favoritos", style=discord.ButtonStyle.green, custom_id=f"add_to_favorites_{self.movie_id}"))
-        self.add_item(Button(label="Watchlist", style=discord.ButtonStyle.grey, custom_id=f"add_to_watchlist_{self.movie_id}"))
-
     async def make_tmdb_post(self, method, endpoint, data):
         url = f"https://api.themoviedb.org/3/{endpoint}"
         headers = {'Authorization': f'Bearer {self.api_key}', 'Content-Type': 'application/json;charset=utf-8'}

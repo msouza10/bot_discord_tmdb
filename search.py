@@ -226,6 +226,7 @@ class FilmeCog(commands.Cog):
         if session_id is not None:
           logging.info(f"Usuário {ctx.author} autenticado com session_id: {session_id}, incluindo opções interativas")
           view = FilmeView(movie_id, user_api_key, self.bot, session_id)
+          logging.info(f"FilmeView criada para o filme: {movie_title} com ID: {movie_id}")
         else:
           logging.info(f"Usuário {ctx.author} não autenticado, omitindo opções interativas")
           view = None
@@ -233,6 +234,7 @@ class FilmeCog(commands.Cog):
         embed = discord.Embed(title="Informação do Filme", description=description, color=0x00ff00)
         if poster_url:
           embed.set_image(url=poster_url)
+        logging.info(f"Enviando embed para {ctx.author} com FilmeView: {'sim' if view is not None else 'não'}")
         await ctx.send(embed=embed, view=view)
         logging.info(f"Informações do filme '{movie_title}' enviadas para {ctx.author}")
 
@@ -383,6 +385,71 @@ class FilmeCog(commands.Cog):
         embed = discord.Embed(title=f"Elenco e Equipe de '{search_response['results'][0]['title']}'", description=description, color=0x00ff00)
         await ctx.send(embed=embed)
 
+    @commands.command(name='favoritos')
+    async def fetch_favorites(self, ctx):
+        user_api_key = self.get_user_api_key(ctx.author.id)
+        session_data = self.bot.database.get_user_session_id(ctx.author.id)
+        session_id = session_data[0] if session_data else None
+
+        if not user_api_key or not session_id:
+            await ctx.send("Você precisa estar autenticado e ter configurado sua chave da API do TMDb para usar este comando.")
+            return
+
+        account_id = self.bot.database.get_account_id(ctx.author.id)
+        favorites_url = f"https://api.themoviedb.org/3/account/{account_id}/favorite/movies?api_key={user_api_key}&session_id={session_id}"
+        favorites_response = await self.make_tmdb_request(favorites_url)
+
+        if not favorites_response or 'results' not in favorites_response:
+            await ctx.send("Não foi possível recuperar a lista de favoritos.")
+            return
+
+        favorites = favorites_response['results']
+        if not favorites:
+            await ctx.send("Sua lista de favoritos está vazia.")
+            return
+
+        favorites_list = [f"{i+1}. [{fav['title']}](https://www.themoviedb.org/movie/{fav['id']})" for i, fav in enumerate(favorites)]
+        await self.send_list_in_chunks(ctx, "Seus Filmes Favoritos", favorites_list)
+
+    @commands.command(name='watchlist')
+    async def fetch_watchlist(self, ctx):
+        user_api_key = self.get_user_api_key(ctx.author.id)
+        session_data = self.bot.database.get_user_session_id(ctx.author.id)
+        session_id = session_data[0] if session_data else None
+
+        if not user_api_key or not session_id:
+            await ctx.send("Você precisa estar autenticado e ter configurado sua chave da API do TMDb para usar este comando.")
+            return
+
+        account_id = self.bot.database.get_account_id(ctx.author.id)
+        watchlist_url = f"https://api.themoviedb.org/3/account/{account_id}/watchlist/movies?api_key={user_api_key}&session_id={session_id}"
+        watchlist_response = await self.make_tmdb_request(watchlist_url)
+
+        if not watchlist_response or 'results' not in watchlist_response:
+            await ctx.send("Não foi possível recuperar a watchlist.")
+            return
+
+        watchlist = watchlist_response['results']
+        if not watchlist:
+            await ctx.send("Sua watchlist está vazia.")
+            return
+
+        watchlist_list = [f"{i+1}. [{movie['title']}](https://www.themoviedb.org/movie/{movie['id']})" for i, movie in enumerate(watchlist)]
+        await self.send_list_in_chunks(ctx, "Sua Watchlist", watchlist_list)
+
+    async def send_list_in_chunks(self, ctx, title, items_list):
+        embed_description = ""
+        for item in items_list:
+            if len(embed_description) + len(item) > 2048 or len(embed_description) > 1900:
+                embed = discord.Embed(title=title, description=embed_description, color=discord.Color.blue())
+                await ctx.send(embed=embed)
+                embed_description = item + "\n"
+            else:
+                embed_description += item + "\n"
+
+        if embed_description:
+            embed = discord.Embed(title=title, description=embed_description, color=discord.Color.blue())
+            await ctx.send(embed=embed)
   
 async def setup(bot):
     await bot.add_cog(FilmeCog(bot))

@@ -65,15 +65,14 @@ class RecomendacaoFilmeCog(commands.Cog):
           return recomendacoes
       return None
 
-
     @commands.command(name='recomendacao')
-    async def recomendacao_command(self, ctx, nome_filme, max_recomendacoes: int = 5):
+    async def recomendacao_command(self, ctx, nome_filme):
         user_id = ctx.author.id
         api_key = await self.buscar_api_key_usuario(user_id)
         if api_key:
             movie_id = await self.obter_id_filme(api_key, nome_filme)
             if movie_id:
-                recomendacoes = await self.recomendar_filme(api_key, movie_id, max_recomendacoes)
+                recomendacoes = await self.recomendar_filme(api_key, movie_id, 5)  # Número fixo de recomendações
                 if recomendacoes:
                     for filme in recomendacoes:
                         if filme:
@@ -90,7 +89,7 @@ class RecomendacaoFilmeCog(commands.Cog):
                                 description += f"\n**Disponível em:** {', '.join(filme['streaming_services'])}"
                             if filme['trailer_link']:
                                 description += f"\n**Trailer:** [Assistir no YouTube]({filme['trailer_link']})"
-
+  
                             embed = discord.Embed(title="Informação do Filme", description=description, color=0x00ff00)
                             if filme['poster_url']:
                                 embed.set_image(url=filme['poster_url'])

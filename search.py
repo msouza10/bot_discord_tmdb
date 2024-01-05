@@ -50,6 +50,12 @@ class FilmeCog(commands.Cog):
       session_data = await response.json()
       return session_data.get('session_id')
 
+    async def get_account_id(self, api_key, session_id):
+      url = f"https://api.themoviedb.org/3/account?api_key={api_key}&session_id={session_id}"
+      response = await self.bot.session.get(url)
+      account_data = await response.json()
+      return account_data.get('id')
+
     @commands.command(name='iniciar_autenticacao')
     async def start_authentication(self, ctx):
         logging.info("Comando iniciar_autenticacao chamado")
@@ -63,21 +69,26 @@ class FilmeCog(commands.Cog):
             authorization_url = f"https://www.themoviedb.org/authenticate/{request_token}"
             await ctx.send(f"Por favor, autorize o acesso em: {authorization_url}\nVocê tem 3 minutos para concluir a autenticação.")
 
-            # Espera pela confirmação da autenticação
-            print("Data e hora atual:", dt.now())
             end_time = dt.now() + timedelta(minutes=3)
-            print("Data e hora após 3 minutos:", end_time)
             while dt.now() < end_time:
                 session_id = await self.create_session(user_api_key, request_token)
+                print(f"Tentativa de obter session_id: {session_id}")
                 if session_id:
-                    # Salve o session_id no banco de dados
-                    self.bot.database.set_user_session(ctx.author.id, session_id)
-                    await ctx.send("Autenticação realizada com sucesso.")
-                    return
-                await asyncio.sleep(10)   # Verifica a cada 10 segundos
+                    account_id = await self.get_account_id(user_api_key, session_id)
+                    print(f"Tentativa de obter account_id: {account_id}")
+                    if account_id:
+                        self.bot.database.set_user_session(ctx.author.id, session_id, account_id)
+                        await ctx.send(f"Autenticação realizada com sucesso.")
+                        return
+                    else:
+                        await ctx.send("Falha ao obter account ID.")
+                        return
+                await asyncio.sleep(10)  # Verifica a cada 10 segundos
 
+            print("Autenticação expirou")
             await ctx.send("Tempo de autenticação expirado. Tente novamente.")
         else:
+            print("Falha ao criar token de requisição")
             await ctx.send("Não foi possível criar um token de requisição. Tente novamente mais tarde.")
 
     @commands.command(name='configurar_api')

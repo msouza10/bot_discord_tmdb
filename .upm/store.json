@@ -1,1 +1,1 @@
-{"version":2,"languages":{"python-python3-poetry":{"specfileHash":"2f6432f63ff8c49be16344d0953c67e6","lockfileHash":"9bd4236d9b633d4f8a3fd38fd61ecaee","guessedImports":["aiohttp","consultor","discord-py","requests"],"guessedImportsHash":"96bfc37c4ef84fcaf50ba03395abf1cb"}}}
+{"version":2,"languages":{"python-python3-poetry":{"specfileHash":"2f6432f63ff8c49be16344d0953c67e6","lockfileHash":"9bd4236d9b633d4f8a3fd38fd61ecaee"}}}

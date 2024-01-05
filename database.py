@@ -76,7 +76,7 @@ class Database:
       self.conn.execute(query, (cutoff_date,))
       self.conn.commit()
 
-    def set_user_session(self, user_id, session_id, account_id=None):
+    def set_user_session(self, user_id, session_id, account_id):
       query = "REPLACE INTO user_sessions (user_id, session_id, account_id) VALUES (?, ?, ?)"
       self.conn.execute(query, (user_id, session_id, account_id))
       self.conn.commit()
@@ -86,4 +86,10 @@ class Database:
       cursor = self.conn.execute(query, (user_id,))
       result = cursor.fetchone()
       return result if result else (None, None)
+
+    def get_account_id(self, user_id):
+      query = "SELECT account_id FROM user_sessions WHERE user_id = ?"
+      cursor = self.conn.execute(query, (user_id,))
+      result = cursor.fetchone()
+      return result[0] if result else None
 

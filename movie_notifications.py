@@ -7,7 +7,7 @@ import datetime
 class MovieNotificationsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.api_key = '8a37598beeaadf71a6ceb69d96f9714d'
+        self.api_key = ''
         self.notification_channel_id = None
         print("Iniciando o MovieNotificationsCog...")
         self.session = aiohttp.ClientSession()

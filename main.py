@@ -4,7 +4,7 @@ from discord.ext import commands
 from database import Database
 import aiohttp
 
-DISCORD_BOT_TOKEN = 'MTE4OTM2NjAxNDY4OTk0NzY0OA.Ga6akp.UbaQ1BO5cZ27HvyipT_9YVRVr-3ECkyVf2P8rA'
+DISCORD_BOT_TOKEN = ''
 
 intents = discord.Intents.default()
 intents.messages = True
